@@ -4,7 +4,9 @@ Vcat is a CLI tool to save YouTube video transcriptions without the need of an A
 The implementation is very simple and does not handle any edgecases right now.
 
 ## Usage
+
 Printing out the transcription JSON to stdout.
+
 ```bash
 > ./bin/vcat -u "https://www.youtube.com/watch?v=VRsbX16JAzY"
 # {
@@ -19,6 +21,6 @@ Printing out the transcription JSON to stdout.
 #			"Duration": "4.981",
 #			"Context": "Banks not working not really"
 #		},
-#    ... 
+#    ...
 #}
 ```
