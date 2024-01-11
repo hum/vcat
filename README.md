@@ -24,3 +24,12 @@ Printing out the transcription JSON to stdout.
 #    ...
 #}
 ```
+
+## Install
+From source:
+```bash
+> git clone https://github.com/hum/vcat.git
+> cd vcat
+> make build
+> ./bin/vcat -u [URL]
+```
