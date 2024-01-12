@@ -1,4 +1,4 @@
-package vcat
+package main
 
 import (
 	"io"

@@ -1,4 +1,36 @@
-package vcat
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+)
+
+var (
+	videoURL string
+)
+
+func main() {
+	flag.StringVar(&videoURL, "url", "", "url to the video to get transcription from")
+	flag.StringVar(&videoURL, "u", "", "url to the video to get transcription from")
+	flag.Parse()
+
+	if videoURL == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	captions, err := GetCaptions(videoURL)
+	if err != nil {
+		panic(err)
+	}
+	transcript, err := GetTranscript(captions.PlayerCaptionsTracklistRenderer.CaptionTracks[0].BaseUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(StringIdentStruct(transcript))
+}
 
 // GetCaptions is the entrypoint to fetching video captions for a YouTube video.
 //

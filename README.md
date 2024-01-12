@@ -25,11 +25,20 @@ Printing out the transcription JSON to stdout.
 #}
 ```
 
-## Install
-From source:
+# Install
+
+### From source
+
 ```bash
-> git clone https://github.com/hum/vcat.git
+> git clone git@github.com:hum/vcat.git
 > cd vcat
 > make build
 > ./bin/vcat -u [URL]
+```
+
+### With Go Install
+
+```bash
+> go install github.com/hum/vcat@latest
+> vcat -u [URL]
 ```
