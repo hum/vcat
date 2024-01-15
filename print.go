@@ -9,3 +9,8 @@ func StringIdentStruct(strct any) string {
 	s, _ := json.MarshalIndent(strct, "", "\t")
 	return string(s)
 }
+
+func StringStruct(strct any) string {
+	s, _ := json.Marshal(strct)
+	return string(s)
+}
