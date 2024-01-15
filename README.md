@@ -1,25 +1,24 @@
 # vcat
 
-Vcat is a CLI tool to save YouTube video transcriptions without the need of an API key. Just like [cat(1)](https://man7.org/linux/man-pages/man1/cat.1.html), but for YouTube videos.
-The implementation does not handle many edgecases right now.
+Vcat helps you save YouTube video transcriptions without the need of an API key. Just like [cat(1)](https://man7.org/linux/man-pages/man1/cat.1.html), but for YouTube videos.
 
 ## Usage
 
 Printing out the transcription JSON to stdout.
 
 ```bash
-> ./bin/vcat -u "https://www.youtube.com/watch?v=VRsbX16JAzY"
+> vcat -u "https://www.youtube.com/watch?v=VRsbX16JAzY" --pretty
 # {
-#	"Text": [
+#	"data": [
 #		{
-#			"Start": "1.38",
-#			"Duration": "3.78",
-#			"Context": "more recent thoughts on crypto after"
+#			"start": "1.38",
+#			"duration": "3.78",
+#			"Text": "more recent thoughts on crypto after"
 #		},
 #		{
-#			"Start": "3.179",
-#			"Duration": "4.981",
-#			"Context": "Banks not working not really"
+#			"start": "3.179",
+#			"duration": "4.981",
+#			"Text": "Banks not working not really"
 #		},
 #    ...
 #}
