@@ -1,4 +1,4 @@
-package main
+package types
 
 import "encoding/xml"
 
@@ -25,12 +25,23 @@ type Captions struct {
 	} `json:"playerCaptionsTracklistRenderer"`
 }
 
+// Transcript is the underlying structure for processing the raw data of the transcript.
+// It is used both as a serializing entity and as an output entity.
 type Transcript struct {
 	XMLName xml.Name `xml:"transcript" json:"-"`
 	Text    []struct {
 		XMLName  xml.Name `xml:"text" json:"-"`
-		Start    string   `xml:"start,attr"`
-		Duration string   `xml:"dur,attr"`
-		Context  string   `xml:",innerxml"`
-	} `xml:"text"`
+		Start    string   `xml:"start,attr" json:"start"`  // Start time of the text
+		Duration string   `xml:"dur,attr" json:"duration"` // Approximate duration of the speech in `text`
+		Text     string   `xml:",innerxml"`                // The text being said in the current time bucket
+	} `xml:"text" json:"data"`
+}
+
+// AvailableLanguage holds the available translation data of transcripts provided by YouTube
+type AvailableLanguage struct {
+	// Full name of the language translation, e.g. "English"
+	Name string `json:"name"`
+
+	// Code representation of the language's name, e.g. "en"
+	Code string `json:"code"`
 }

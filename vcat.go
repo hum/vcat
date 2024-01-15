@@ -4,15 +4,22 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/hum/vcat/pkg/svc"
 )
 
 var (
-	videoURL string
+	videoURL          string
+	language          string
+	showLanguageCodes bool
 )
 
 func main() {
 	flag.StringVar(&videoURL, "url", "", "url to the video to get transcription from")
 	flag.StringVar(&videoURL, "u", "", "url to the video to get transcription from")
+	flag.StringVar(&language, "language", "en", "fetch captions in different languages")
+	flag.BoolVar(&showLanguageCodes, "l", false, "show a list of available language codes")
+	flag.BoolVar(&showLanguageCodes, "list", false, "show a list of available language codes")
 	flag.Parse()
 
 	if videoURL == "" {
@@ -20,34 +27,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	captions, err := GetCaptions(videoURL)
-	if err != nil {
-		panic(err)
-	}
-	transcript, err := GetTranscript(captions.PlayerCaptionsTracklistRenderer.CaptionTracks[0].BaseUrl)
-	if err != nil {
-		panic(err)
+	var svc = svc.NewTranscriptSvc()
+
+	if showLanguageCodes {
+		err := ListLanguages(svc, videoURL)
+		if err != nil {
+			panic(err)
+		}
+		os.Exit(0)
 	}
 
+	err := GetTranscription(svc, videoURL, language)
+	if err != nil {
+		panic(err)
+	}
+	os.Exit(0)
+}
+
+func GetTranscription(svc *svc.TranscriptSvc, url string, language string) error {
+	transcript, err := svc.GetTranscript(url, language)
+	if err != nil {
+		return err
+	}
 	fmt.Println(StringIdentStruct(transcript))
+	return nil
 }
 
-// GetCaptions is the entrypoint to fetching video captions for a YouTube video.
-//
-// @TODO: Handle edge-cases.
-func GetCaptions(url string) (Captions, error) {
-	b, err := GetBodyAsByteSlice(url)
+func ListLanguages(svc *svc.TranscriptSvc, url string) error {
+	languages, err := svc.GetLanguageCodes(videoURL)
 	if err != nil {
-		return Captions{}, err
+		return err
 	}
-	return GetCaptionsFromRawHtml(b)
-}
-
-// GetTranscript is the entrypoint for fetching the actual transcript for a YouTube video.
-func GetTranscript(url string) (Transcript, error) {
-	b, err := GetBodyAsByteSlice(url)
-	if err != nil {
-		return Transcript{}, nil
-	}
-	return ParseTranscriptFromXml(b)
+	fmt.Println(languages)
+	return nil
 }
