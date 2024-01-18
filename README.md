@@ -9,20 +9,20 @@ Printing out the transcription JSON to stdout.
 ```bash
 > vcat -u "https://www.youtube.com/watch?v=VRsbX16JAzY" --pretty
 # {
-#	"data": [
-#		{
-#			"start": "00:00:01",
-#           "end": "00:00:04",
-#			"duration": 3.78,
-#			"text": "more recent thoughts on crypto after"
-#		},
-#		{
-#			"start": "00:00:03",
-#           "end": "00:00:07",
-#			"duration": "4.981",
-#			"text": "Banks not working not really"
-#		},
-#    ...
+#   "data": [
+#     {
+#       "start": "00:00:01",
+#       "end": "00:00:04",
+#       "duration": 3.78,
+#       "text": "more recent thoughts on crypto after"
+#     },
+#     {
+#       "start": "00:00:03",
+#       "end": "00:00:07",
+#       "duration": "4.981",
+#       "text": "Banks not working not really"
+#     },
+#     ...
 #}
 ```
 
