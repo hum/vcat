@@ -10,20 +10,13 @@ import (
 	"github.com/hum/vcat/pkg/types"
 )
 
-type DataFormat string
-
-const (
-	JSON DataFormat = "json"
-	CSV  DataFormat = "csv"
-)
-
 var (
 	videoURL          string
 	language          string
-	prettyFormat      bool
-	showLanguageCodes bool
 	outputPath        string
 	filetypeFormat    string
+	prettyFormat      bool
+	showLanguageCodes bool
 )
 
 func main() {
@@ -58,20 +51,9 @@ func main() {
 		panic(err)
 	}
 
-	var rr []byte
-	switch filetypeFormat {
-	case "json":
-		rr, err = format.TranscriptToJSON(transcript, prettyFormat)
-		if err != nil {
-			panic(err)
-		}
-	case "csv":
-		rr, err = format.TranscriptToCSV(transcript)
-		if err != nil {
-			panic(err)
-		}
-	default:
-		panic(fmt.Sprintf("unsupported file type=%s", filetypeFormat))
+	rr, err := FormatTranscriptToByteSlice(transcript, filetypeFormat)
+	if err != nil {
+		panic(err)
 	}
 
 	if outputPath != "" {
@@ -92,4 +74,26 @@ func GetTranscription(svc *svc.TranscriptSvc, url string, language string) (*typ
 
 func ListLanguages(svc *svc.TranscriptSvc, url string) ([]types.AvailableLanguage, error) {
 	return svc.GetLanguageCodes(videoURL)
+}
+
+func FormatTranscriptToByteSlice(t *types.Transcript, ftype string) ([]byte, error) {
+	var (
+		result []byte
+		err    error
+	)
+	switch filetypeFormat {
+	case "json":
+		result, err = format.TranscriptToJSON(t, prettyFormat)
+		if err != nil {
+			return nil, err
+		}
+	case "csv":
+		result, err = format.TranscriptToCSV(t)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unsupported file type=%s", ftype)
+	}
+	return result, nil
 }
