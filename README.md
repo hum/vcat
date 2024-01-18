@@ -56,6 +56,7 @@ Vcat helps you save YouTube video transcriptions without the need of an API key.
 ```
 
 #### Work with a CSV:
+
 ```bash
 > vcat -u "url" --format csv
 # start,end,duration,text
@@ -77,6 +78,6 @@ Vcat helps you save YouTube video transcriptions without the need of an API key.
 ### With Go Install
 
 ```bash
-> go install github.com/hum/vcat@latest
+> go install github.com/hum/vcat/cmd/vcat@latest
 > vcat -u [URL]
 ```
