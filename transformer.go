@@ -1,4 +1,4 @@
-package transformer
+package vcat
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hum/vcat/pkg/types"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -18,21 +17,21 @@ import (
 // It receives the initial YouTube response as a byte slice.
 //
 // @TODO: This is a very naive function which does not handle any edge-cases.
-func GetCaptionsFromInitialHttpResponse(b []byte) (types.Captions, error) {
+func getCaptionsFromInitialHttpResponse(b []byte) (captions, error) {
 	dataStr := string(b)
 
 	// Unfortunately the response is in HTML, so we parse it as a string
 	// and only load the necessary parts as a valid JSON.
 	parts := strings.Split(dataStr, "\"captions\":")
 	if len(parts) < 2 {
-		return types.Captions{}, fmt.Errorf("could not find captions")
+		return captions{}, fmt.Errorf("could not find captions")
 	}
 	parts = strings.Split(parts[1], ",\"videoDetails\"")
 
 	var jsonString map[string]interface{}
 	json.Unmarshal([]byte(parts[0]), &jsonString)
 
-	var captions types.Captions
+	var captions captions
 	err := mapstructure.Decode(jsonString, &captions)
 	return captions, err
 }
@@ -41,8 +40,8 @@ func GetCaptionsFromInitialHttpResponse(b []byte) (types.Captions, error) {
 // which represents the available transcript for the given YouTube video.
 //
 // It receives the timedtext (https://www.youtube.com/api/timedtext) response as a byte slice.
-func GetTranscriptFromXMLResponse(b []byte) (*types.Transcript, error) {
-	var transcript types.Transcript
+func getTranscriptFromXMLResponse(b []byte) (*Transcript, error) {
+	var transcript Transcript
 	err := xml.Unmarshal(b, &transcript)
 	if err != nil {
 		return nil, err
@@ -53,7 +52,7 @@ func GetTranscriptFromXMLResponse(b []byte) (*types.Transcript, error) {
 
 // Parses the raw transcript into a more human-readable form with normalised datetime representations.
 // {"start": "0.0", "duration": "1.0", "text": "hello"} => {"start": "00:00:00", "end": "00:00:01", "duration": 1.0, "text": "hello"}
-func parseStartTimeEndTimeTimestamps(t types.Transcript) (*types.Transcript, error) {
+func parseStartTimeEndTimeTimestamps(t Transcript) (*Transcript, error) {
 	for i, item := range t.Text {
 		startTimeFloat, err := strconv.ParseFloat(item.Start, 64)
 		if err != nil {
@@ -78,7 +77,7 @@ func parseStartTimeEndTimeTimestamps(t types.Transcript) (*types.Transcript, err
 }
 
 // unescapeCharactersFromText removes unecessary character encoding possibly present in the raw text field
-func unescapeCharactersFromText(t *types.Transcript) {
+func unescapeCharactersFromText(t *Transcript) {
 	for i, txt := range t.Text {
 		t.Text[i].Text = strings.ReplaceAll(txt.Text, "\u0026#39;", "'")
 		t.Text[i].Text = strings.ReplaceAll(txt.Text, "\u0026amp;#39;", "'")

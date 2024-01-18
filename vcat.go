@@ -1,104 +1,75 @@
-package main
+package vcat
 
 import (
-	"flag"
-	"fmt"
-	"log/slog"
-	"os"
-
-	"github.com/hum/vcat/pkg/format"
-	"github.com/hum/vcat/pkg/svc"
-	"github.com/hum/vcat/pkg/types"
+	"io"
+	"net/http"
+	"time"
 )
 
 var (
-	videoURL          string
-	language          string
-	outputPath        string
-	filetypeFormat    string
-	prettyFormat      bool
-	showLanguageCodes bool
+	httpclient *http.Client = &http.Client{Timeout: 60 * time.Second}
 )
 
-func main() {
-	flag.StringVar(&videoURL, "url", "", "url to the video to get transcription from")
-	flag.StringVar(&videoURL, "u", "", "url to the video to get transcription from")
-	flag.StringVar(&language, "language", "en", "fetch captions in different languages")
-	flag.StringVar(&filetypeFormat, "format", "json", "specify which format to use for the data")
-	flag.StringVar(&outputPath, "o", "", "output path of the file")
-	flag.BoolVar(&showLanguageCodes, "l", false, "show a list of available language codes")
-	flag.BoolVar(&showLanguageCodes, "list", false, "show a list of available language codes")
-	flag.BoolVar(&prettyFormat, "pretty", false, "pretty print the JSON to the CLI")
-	flag.Parse()
-
-	if videoURL == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	var svc = svc.NewTranscriptSvc()
-
-	if showLanguageCodes {
-		languages, err := ListLanguages(svc, videoURL)
-		if err != nil {
-			slog.Error("cannot list languages, err", err)
-			os.Exit(1)
-		}
-		fmt.Println(languages)
-		os.Exit(0)
-	}
-
-	transcript, err := GetTranscription(svc, videoURL, language)
+func GetTranscription(url string, language string) (*Transcript, error) {
+	captionsBody, err := do(httpclient, url)
 	if err != nil {
-		slog.Error("cannot get transcription", "err", err, "url", videoURL, "language", language)
-		os.Exit(1)
+		return nil, err
 	}
 
-	rr, err := FormatTranscriptToByteSlice(transcript, filetypeFormat)
+	c, err := getCaptionsFromInitialHttpResponse(captionsBody)
 	if err != nil {
-		slog.Error("cannot format transcript")
-		os.Exit(1)
+		return nil, err
 	}
 
-	if outputPath != "" {
-		err := os.WriteFile(outputPath, rr, 0644)
-		if err != nil {
-			slog.Error("cannot write transcription to file", "err", err)
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println(string(rr))
+	var transcriptUrl = c.PlayerCaptionsTracklistRenderer.CaptionTracks[0].BaseUrl
+
+	// The default language is "en", it does not make sense to specify it twice.
+	if language != "en" {
+		transcriptUrl += "&tlang=" + language
 	}
 
-	os.Exit(0)
-}
-
-func GetTranscription(svc *svc.TranscriptSvc, url string, language string) (*types.Transcript, error) {
-	return svc.GetTranscript(url, language)
-}
-
-func ListLanguages(svc *svc.TranscriptSvc, url string) ([]types.AvailableLanguage, error) {
-	return svc.GetLanguageCodes(videoURL)
-}
-
-func FormatTranscriptToByteSlice(t *types.Transcript, ftype string) ([]byte, error) {
-	var (
-		result []byte
-		err    error
-	)
-	switch filetypeFormat {
-	case "json":
-		result, err = format.TranscriptToJSON(t, prettyFormat)
-		if err != nil {
-			return nil, err
-		}
-	case "csv":
-		result, err = format.TranscriptToCSV(t)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("unsupported file type=%s", ftype)
+	transcriptBody, err := do(httpclient, transcriptUrl)
+	if err != nil {
+		return nil, err
 	}
-	return result, nil
+	return getTranscriptFromXMLResponse(transcriptBody)
+}
+
+func GetAvailableLanguages(url string) ([]AvailableLanguage, error) {
+	body, err := do(httpclient, url)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := getCaptionsFromInitialHttpResponse(body)
+	if err != nil {
+		return nil, err
+	}
+
+	var languages = make([]AvailableLanguage, 0, len(c.PlayerCaptionsTracklistRenderer.TranslationLanguages))
+	for _, lang := range c.PlayerCaptionsTracklistRenderer.TranslationLanguages {
+		languages = append(languages, AvailableLanguage{
+			Name: lang.LanguageName.SimpleText,
+			Code: lang.LanguageCode,
+		})
+	}
+	return languages, nil
+}
+
+func do(httpclient *http.Client, url string) ([]byte, error) {
+	r, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := httpclient.Do(r)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }

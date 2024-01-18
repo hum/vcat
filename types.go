@@ -1,10 +1,10 @@
-package types
+package vcat
 
 import "encoding/xml"
 
 // Captions represent the main structure
 // which holds all of the necessary data to retrieve the actual captions
-type Captions struct {
+type captions struct {
 	PlayerCaptionsTracklistRenderer struct {
 		CaptionTracks []struct {
 			BaseUrl string `json:"baseUrl"`
