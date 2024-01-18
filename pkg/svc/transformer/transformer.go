@@ -3,6 +3,7 @@ package transformer
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ func GetCaptionsFromInitialHttpResponse(b []byte) (types.Captions, error) {
 	// Unfortunately the response is in HTML, so we parse it as a string
 	// and only load the necessary parts as a valid JSON.
 	parts := strings.Split(dataStr, "\"captions\":")
+	if len(parts) < 2 {
+		return types.Captions{}, fmt.Errorf("could not find captions")
+	}
 	parts = strings.Split(parts[1], ",\"videoDetails\"")
 
 	var jsonString map[string]interface{}
@@ -43,6 +47,7 @@ func GetTranscriptFromXMLResponse(b []byte) (*types.Transcript, error) {
 	if err != nil {
 		return nil, err
 	}
+	unescapeCharactersFromText(&transcript)
 	return parseStartTimeEndTimeTimestamps(transcript)
 }
 
@@ -70,4 +75,12 @@ func parseStartTimeEndTimeTimestamps(t types.Transcript) (*types.Transcript, err
 		t.Text[i].End = endTime.Format("15:04:05")
 	}
 	return &t, nil
+}
+
+// unescapeCharactersFromText removes unecessary character encoding possibly present in the raw text field
+func unescapeCharactersFromText(t *types.Transcript) {
+	for i, txt := range t.Text {
+		t.Text[i].Text = strings.ReplaceAll(txt.Text, "\u0026#39;", "'")
+		t.Text[i].Text = strings.ReplaceAll(txt.Text, "\u0026amp;#39;", "'")
+	}
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/hum/vcat/pkg/format"
@@ -40,7 +41,8 @@ func main() {
 	if showLanguageCodes {
 		languages, err := ListLanguages(svc, videoURL)
 		if err != nil {
-			panic(err)
+			slog.Error("cannot list languages, err", err)
+			os.Exit(1)
 		}
 		fmt.Println(languages)
 		os.Exit(0)
@@ -48,18 +50,21 @@ func main() {
 
 	transcript, err := GetTranscription(svc, videoURL, language)
 	if err != nil {
-		panic(err)
+		slog.Error("cannot get transcription", "err", err, "url", videoURL, "language", language)
+		os.Exit(1)
 	}
 
 	rr, err := FormatTranscriptToByteSlice(transcript, filetypeFormat)
 	if err != nil {
-		panic(err)
+		slog.Error("cannot format transcript")
+		os.Exit(1)
 	}
 
 	if outputPath != "" {
 		err := os.WriteFile(outputPath, rr, 0644)
 		if err != nil {
-			panic(err)
+			slog.Error("cannot write transcription to file", "err", err)
+			os.Exit(1)
 		}
 	} else {
 		fmt.Println(string(rr))
