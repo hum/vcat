@@ -5,24 +5,36 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hum/vcat/pkg/format"
 	"github.com/hum/vcat/pkg/svc"
 	"github.com/hum/vcat/pkg/types"
+)
+
+type DataFormat string
+
+const (
+	JSON DataFormat = "json"
+	CSV  DataFormat = "csv"
 )
 
 var (
 	videoURL          string
 	language          string
-	prettyPrint       bool
+	prettyFormat      bool
 	showLanguageCodes bool
+	outputPath        string
+	filetypeFormat    string
 )
 
 func main() {
 	flag.StringVar(&videoURL, "url", "", "url to the video to get transcription from")
 	flag.StringVar(&videoURL, "u", "", "url to the video to get transcription from")
 	flag.StringVar(&language, "language", "en", "fetch captions in different languages")
+	flag.StringVar(&filetypeFormat, "format", "json", "specify which format to use for the data")
+	flag.StringVar(&outputPath, "o", "", "output path of the file")
 	flag.BoolVar(&showLanguageCodes, "l", false, "show a list of available language codes")
 	flag.BoolVar(&showLanguageCodes, "list", false, "show a list of available language codes")
-	flag.BoolVar(&prettyPrint, "pretty", false, "pretty print the JSON to the CLI")
+	flag.BoolVar(&prettyFormat, "pretty", false, "pretty print the JSON to the CLI")
 	flag.Parse()
 
 	if videoURL == "" {
@@ -46,10 +58,29 @@ func main() {
 		panic(err)
 	}
 
-	if prettyPrint {
-		fmt.Println(StringIdentStruct(transcript))
+	var rr []byte
+	switch filetypeFormat {
+	case "json":
+		rr, err = format.TranscriptToJSON(transcript, prettyFormat)
+		if err != nil {
+			panic(err)
+		}
+	case "csv":
+		rr, err = format.TranscriptToCSV(transcript)
+		if err != nil {
+			panic(err)
+		}
+	default:
+		panic(fmt.Sprintf("unsupported file type=%s", filetypeFormat))
+	}
+
+	if outputPath != "" {
+		err := os.WriteFile(outputPath, rr, 0644)
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		fmt.Println(StringStruct(transcript))
+		fmt.Println(string(rr))
 	}
 
 	os.Exit(0)
