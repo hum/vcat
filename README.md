@@ -4,10 +4,10 @@ Vcat helps you save YouTube video transcriptions without the need of an API key.
 
 ## Usage
 
-Printing out the transcription JSON to stdout.
+#### Printing out the transcription JSON to stdout.
 
 ```bash
-> vcat -u "https://www.youtube.com/watch?v=VRsbX16JAzY" --pretty
+> vcat -u "url" --pretty
 # {
 #   "data": [
 #     {
@@ -26,10 +26,10 @@ Printing out the transcription JSON to stdout.
 #}
 ```
 
-List available transcriptions:
+#### List available transcriptions:
 
 ```bash
-> vcat -l -u "https://www.youtube.com/watch?v=VRsbX16JAzY"
+> vcat -l -u "url"
 # [{Afrikaans af} {Akan ak} {Albanian sq} {Amharic am} {Arabic ar} {Armenian hy}
 # {Assamese as} {Aymara ay} {Azerbaijani az} {Bangla bn} {Basque eu} {Belarusian be}
 # {Bhojpuri bho} {Bosnian bs} {Bulgarian bg} {Burmese my} {Catalan ca} {Cebuano ceb}
@@ -43,10 +43,24 @@ List available transcriptions:
 # ]
 ```
 
-Specify a different transcription language:
+#### Specify a different transcription language:
 
 ```bash
-> vcat --language="cs" -u "https://www.youtube.com/watch?v=VRsbX16JAzY"
+> vcat --language="cs" -u "url"
+```
+
+#### Save to file:
+
+```bash
+> vcat -o tmp/file.json -u "url"
+```
+
+#### Work with a CSV:
+```bash
+> vcat -u "url" --format csv
+# start,end,duration,text
+# 00:00:01,00:00:04,3.78,more recent thoughts on crypto after
+# 00:00:03,00:00:07,4.98,Banks not working not really
 ```
 
 # Install
