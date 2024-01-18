@@ -3,7 +3,9 @@ package transformer
 import (
 	"encoding/json"
 	"encoding/xml"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hum/vcat/pkg/types"
 	"github.com/mitchellh/mapstructure"
@@ -38,5 +40,34 @@ func GetCaptionsFromInitialHttpResponse(b []byte) (types.Captions, error) {
 func GetTranscriptFromXMLResponse(b []byte) (*types.Transcript, error) {
 	var transcript types.Transcript
 	err := xml.Unmarshal(b, &transcript)
-	return &transcript, err
+	if err != nil {
+		return nil, err
+	}
+	return parseStartTimeEndTimeTimestamps(transcript)
+}
+
+// Parses the raw transcript into a more human-readable form with normalised datetime representations.
+// {"start": "0.0", "duration": "1.0", "text": "hello"} => {"start": "00:00:00", "end": "00:00:01", "duration": 1.0, "text": "hello"}
+func parseStartTimeEndTimeTimestamps(t types.Transcript) (*types.Transcript, error) {
+	for i, item := range t.Text {
+		startTimeFloat, err := strconv.ParseFloat(item.Start, 64)
+		if err != nil {
+			return nil, err
+		}
+		var (
+			startOffset = time.Duration(startTimeFloat) * time.Second
+			duration    = time.Duration(item.Duration) * time.Second
+			endOffset   = time.Duration(startOffset + duration)
+
+			startTime time.Time
+			endTime   time.Time
+		)
+
+		startTime = startTime.Add(startOffset)
+		endTime = endTime.Add(endOffset)
+
+		t.Text[i].Start = startTime.Format("15:04:05")
+		t.Text[i].End = endTime.Format("15:04:05")
+	}
+	return &t, nil
 }

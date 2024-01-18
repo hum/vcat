@@ -31,9 +31,10 @@ type Transcript struct {
 	XMLName xml.Name `xml:"transcript" json:"-"`
 	Text    []struct {
 		XMLName  xml.Name `xml:"text" json:"-"`
-		Start    string   `xml:"start,attr" json:"start"`  // Start time of the text
-		Duration string   `xml:"dur,attr" json:"duration"` // Approximate duration of the speech in `text`
-		Text     string   `xml:",innerxml"`                // The text being said in the current time bucket
+		Start    string   `xml:"start,attr" json:"start"` // Start time of the text
+		End      string   `json:"end"`
+		Duration float64  `xml:"dur,attr" json:"duration"` // Approximate duration of the speech in `text`
+		Text     string   `xml:",innerxml" json:"text"`    // The text being said in the current time bucket
 	} `xml:"text" json:"data"`
 }
 

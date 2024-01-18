@@ -11,14 +11,16 @@ Printing out the transcription JSON to stdout.
 # {
 #	"data": [
 #		{
-#			"start": "1.38",
-#			"duration": "3.78",
-#			"Text": "more recent thoughts on crypto after"
+#			"start": "00:00:01",
+#           "end": "00:00:04",
+#			"duration": 3.78,
+#			"text": "more recent thoughts on crypto after"
 #		},
 #		{
-#			"start": "3.179",
+#			"start": "00:00:03",
+#           "end": "00:00:07",
 #			"duration": "4.981",
-#			"Text": "Banks not working not really"
+#			"text": "Banks not working not really"
 #		},
 #    ...
 #}
