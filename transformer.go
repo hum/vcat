@@ -32,7 +32,7 @@ func getRawVideoDetailFromInitialHttpResponse(b []byte) (*rawVideoDetail, error)
 
 	var (
 		rawCaptions = parts[0]
-		rawMetadata = metadataParts[0][1:] // Remove the ":" prefix of the string, so that it is a valid JSON
+		rawMetadata = strings.Split(metadataParts[0][1:], ",\"annotations\"")[0] // Remove the ":" prefix of the string, so that it is a valid JSON
 
 		captionsMap map[string]interface{}
 		metadataMap map[string]interface{}
