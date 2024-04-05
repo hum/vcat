@@ -1,116 +1,102 @@
 package vcat
 
-import (
-	"io"
-	"net/http"
-	"time"
-)
+import "fmt"
 
-var (
-	httpclient *http.Client = &http.Client{Timeout: 60 * time.Second}
-)
+// GetVideoWithLanguage returns the whole video data, including the transcript in a specified language.
+// Do pass in the language code, not the name of the language. E.g. "en", not "English".
+//
+// Make sure the provided language is supported by asserting it is available on the content.
+// You can use `vcat.GetAvailableLanguages`.
+func GetVideoWithLanguage(url, languageCode string) (*Video, error) {
+	return getVideo(url, languageCode)
+}
 
+// GetVideo returns the whole video data, including the transcript, in English.
+//
+// An alias for `vcat.GetVideoWithLanguage(url, "en")`
 func GetVideo(url string) (*Video, error) {
-	return getVideoWithTranscript(url, "en")
+	return GetVideoWithLanguage(url, "en")
 }
 
-func GetVideoWithTranscript(url string, language string) (*Video, error) {
-	return getVideoWithTranscript(url, language)
+// GetAvailableLanguages returns all valid transcript languages available for the specified url.
+//
+// The returned language names (not codes) could be translated to the language in your location.
+// I.e. if the process calling this function has a Spanish IP, the names of the available langugues are going to be in Spanish.
+func GetAvailableLanguages(url string) ([]AvailableLanguage, error) {
+	v, err := getVideoDetail(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var languages = make([]AvailableLanguage, 0, len(v.captions.PlayerCaptionsTracklistRenderer.TranslationLanguages))
+	for _, l := range v.captions.PlayerCaptionsTracklistRenderer.TranslationLanguages {
+		languages = append(languages, AvailableLanguage{
+			Name: l.LanguageName.SimpleText,
+			Code: l.LanguageCode,
+		})
+	}
+	return languages, nil
 }
 
-func GetVideoTranscript(url string, language string) ([]TextChunk, error) {
-	v, err := getVideoWithTranscript(url, language)
+// getVideo takes in a base URL for the video, and the language code, to return the video metadata along with the transcript.
+//
+// It is up to the caller to validate the passed in languageCode is supported for this video URL.
+func getVideo(url, languageCode string) (*Video, error) {
+	detail, err := getVideoDetail(url)
 	if err != nil {
 		return nil, err
 	}
-	return v.Transcript, nil
+
+	var transcriptUrl = detail.captions.PlayerCaptionsTracklistRenderer.CaptionTracks[0].BaseUrl
+
+	// Only include the language if it isn't English
+	if languageCode != "en" {
+		// @TODO: Should we validate the passed in languageCode is supported for this video? Otherwise we are wasting http requests.
+		transcriptUrl += "&tlang=" + languageCode
+	}
+
+	chunks, err := getTranscriptFromUrl(transcriptUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Video{
+		Metadata:   detail.metadata,
+		Transcript: chunks,
+	}, nil
 }
 
-func GetVideoMetadata(url string) (*VideoMetadata, error) {
-	v, err := getVideoWithTranscript(url, "en")
+// getVideoDetail returns the raw detail from the base video URL
+func getVideoDetail(url string) (*rawVideoDetail, error) {
+	body, err := do(httpclient, url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not request video detail, got err=%s", err)
 	}
-	return v.Metadata, nil
+	return getRawVideoDetailFromInitialHttpResponse(body)
 }
 
-func getVideoWithTranscript(url string, language string) (*Video, error) {
-	captionsBody, err := do(httpclient, url)
+// getTranscriptFromUrl takes in the actual transcript URL and parses it into a slice of TranscriptTextChunks.
+//
+// The provided transcript is returned as-is without any special chunking. It is the raw YouTube transcript.
+func getTranscriptFromUrl(transcriptUrl string) ([]TranscriptTextChunk, error) {
+	body, err := do(httpclient, transcriptUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := getRawVideoDetailFromInitialHttpResponse(captionsBody)
+	t, err := getTranscriptFromXMLResponse(body)
 	if err != nil {
 		return nil, err
 	}
 
-	var transcriptUrl = v.captions.PlayerCaptionsTracklistRenderer.CaptionTracks[0].BaseUrl
-
-	// The default language is "en", it does not make sense to specify it twice.
-	if language != "en" {
-		transcriptUrl += "&tlang=" + language
-	}
-
-	transcriptBody, err := do(httpclient, transcriptUrl)
-	if err != nil {
-		return nil, err
-	}
-	transcript, err := getTranscriptFromXMLResponse(transcriptBody)
-	if err != nil {
-		return nil, err
-	}
-
-	var result = &Video{
-		Metadata: v.metadata,
-	}
-
-	for _, text := range transcript.Text {
-		result.Transcript = append(result.Transcript, TextChunk{
+	var chunks = make([]TranscriptTextChunk, 0, len(t.Text))
+	for _, text := range t.Text {
+		chunks = append(chunks, TranscriptTextChunk{
 			Start:    text.Start,
 			End:      text.End,
 			Duration: text.Duration,
 			Text:     text.Text,
 		})
 	}
-	return result, nil
-}
-
-func GetAvailableCaptionLanguages(url string) ([]AvailableLanguage, error) {
-	body, err := do(httpclient, url)
-	if err != nil {
-		return nil, err
-	}
-
-	v, err := getRawVideoDetailFromInitialHttpResponse(body)
-	if err != nil {
-		return nil, err
-	}
-
-	var languages = make([]AvailableLanguage, 0, len(v.captions.PlayerCaptionsTracklistRenderer.TranslationLanguages))
-	for _, lang := range v.captions.PlayerCaptionsTracklistRenderer.TranslationLanguages {
-		languages = append(languages, AvailableLanguage{
-			Name: lang.LanguageName.SimpleText,
-			Code: lang.LanguageCode,
-		})
-	}
-	return languages, nil
-}
-
-func do(httpclient *http.Client, url string) ([]byte, error) {
-	r, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := httpclient.Do(r)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
+	return chunks, nil
 }

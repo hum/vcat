@@ -38,7 +38,7 @@ func main() {
 	}
 
 	if showLanguageCodes {
-		languages, err := vcat.GetAvailableCaptionLanguages(videoURL)
+		languages, err := vcat.GetAvailableLanguages(videoURL)
 		if err != nil {
 			slog.Error("cannot list languages, err", err)
 			os.Exit(1)
@@ -47,13 +47,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	transcript, err := vcat.GetVideoTranscript(videoURL, language)
+	video, err := vcat.GetVideoWithLanguage(videoURL, language)
 	if err != nil {
 		slog.Error("cannot get transcription", "err", err, "url", videoURL, "language", language)
 		os.Exit(1)
 	}
 
-	rr, err := formatTranscriptToByteSlice(transcript, filetypeFormat, prettyFormat)
+	rr, err := formatTranscriptToByteSlice(video.Transcript, filetypeFormat, prettyFormat)
 	if err != nil {
 		slog.Error("cannot format transcript")
 		os.Exit(1)
@@ -71,7 +71,7 @@ func main() {
 	os.Exit(0)
 }
 
-func formatTranscriptToByteSlice(t []vcat.TextChunk, ftype string, prettyFormat bool) ([]byte, error) {
+func formatTranscriptToByteSlice(t []vcat.TranscriptTextChunk, ftype string, prettyFormat bool) ([]byte, error) {
 	var (
 		result []byte
 		err    error
@@ -93,14 +93,14 @@ func formatTranscriptToByteSlice(t []vcat.TextChunk, ftype string, prettyFormat 
 	return result, nil
 }
 
-func transcriptToJSON(t []vcat.TextChunk, prettyFormat bool) ([]byte, error) {
+func transcriptToJSON(t []vcat.TranscriptTextChunk, prettyFormat bool) ([]byte, error) {
 	if prettyFormat {
 		return json.MarshalIndent(t, "", "  ")
 	}
 	return json.Marshal(t)
 }
 
-func transcriptToCSV(t []vcat.TextChunk) ([]byte, error) {
+func transcriptToCSV(t []vcat.TranscriptTextChunk) ([]byte, error) {
 	var (
 		csvData   strings.Builder
 		csvWriter = csv.NewWriter(&csvData)

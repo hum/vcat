@@ -2,17 +2,11 @@ package vcat
 
 import (
 	"encoding/xml"
-	"errors"
-)
-
-var (
-	ErrTranscriptNotFound error = errors.New("no trancript found for given url")
-	ErrCaptionsNotFound   error = errors.New("no captions found for url")
 )
 
 type Video struct {
-	Metadata   *VideoMetadata `json:"metadata"`
-	Transcript []TextChunk    `json:"transcript"`
+	Metadata   *VideoMetadata        `json:"metadata"`
+	Transcript []TranscriptTextChunk `json:"transcript"`
 }
 
 // VideoMetadata stores information related to the video, e.g. the title, or the thumbnails
@@ -36,7 +30,7 @@ type VideoMetadata struct {
 	IsLiveContent bool   `json:"isLiveContent"`
 }
 
-type TextChunk struct {
+type TranscriptTextChunk struct {
 	Start    string  `json:"start"`    // Start time of the text
 	End      string  `json:"end"`      // End time of the text
 	Duration float64 `json:"duration"` // Approximate duration of the speech in `text`
