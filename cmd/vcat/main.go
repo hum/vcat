@@ -112,6 +112,9 @@ func transcriptToCSV(t []vcat.TranscriptTextChunk) ([]byte, error) {
 
 	for _, part := range t {
 		var row = []string{
+			part.Start,
+			part.End,
+			fmt.Sprintf("%.2f", part.Duration),
 			part.Text,
 		}
 		csvWriter.Write(row)
