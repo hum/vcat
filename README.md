@@ -71,13 +71,13 @@ Vcat helps you save YouTube video transcriptions without the need of an API key.
 ```bash
 > git clone git@github.com:hum/vcat.git
 > cd vcat
-> make build
-> ./bin/vcat -u [URL]
+> go build -o vcat cmd/vcat/main.go
+> ./vcat
 ```
 
 ### With Go Install
 
 ```bash
 > go install github.com/hum/vcat/cmd/vcat@latest
-> vcat -u [URL]
+> vcat
 ```
